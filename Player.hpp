@@ -15,15 +15,14 @@ extern "C"
 #include <libavutil/frame.h>
 #include <libavutil/imgutils.h>
 }
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_thread.h"
-#include "SDL2/SDL_syswm.h"
-#include "SDL2/SDL_render.h"
-#include "SDL2/SDL_audio.h"
+#include "SDL/SDL.h"
+#include "SDL/SDL_thread.h"
+#include "SDL/SDL_syswm.h"
+#include "SDL/SDL_audio.h"
 
 #define SDL_MAIN_HANDLED
 #define ERROR_SIZE 128
-#define FORMATO AV_PIX_FMT_RGB24
+#define FORMATO AV_PIX_FMT_YUV420P
 #define SDL_AUDIO_BUFFER_SIZE 1024;
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000
 
@@ -38,7 +37,7 @@ typedef struct _AudioPacket
 class Player {
 
 public:
-	
+
 	//construtor
 	Player(std::string endereco) {
 
@@ -90,16 +89,16 @@ public:
 
 	}
 
-	
+
 	void exibirInformacaoArquivoVideo(void);
 	int alocarMemoria(void);
 	int lerFramesVideo(void);
 	int criarDisplay(void);
-	
+
 	static int getAudioPacket(AudioPacket*, AVPacket*, int);
 
 private:
-	
+
 	void memsetAudioPacket(AudioPacket * pq);
 	//armazena o �ndice do determinado Stream a ser transmitido
 	int videoStream;
@@ -145,12 +144,10 @@ private:
 
 	//surface window para exibir o video
 	//pode ter m�ltiplas screens
-	SDL_Window *screen;
+	SDL_Surface *screen;
 
-	SDL_Renderer *renderer;
+	SDL_Overlay* bmp;
 
-	SDL_Texture* bmp;
-	
 	//exibe o erro com rela��o ao seu respectivo c�digo
 	void exibirErro(int erro);
 
@@ -160,8 +157,8 @@ private:
 
 	int PacketQueuePut(AudioPacket *, const AVPacket *);
 
-	void initAudioPacket(AudioPacket *); 
+	void initAudioPacket(AudioPacket *);
 
-	int putAudioPacket(AudioPacket *, AVPacket *); 
+	int putAudioPacket(AudioPacket *, AVPacket *);
 
 };

@@ -124,7 +124,7 @@ int Player::alocarMemoria(void) {
 	av_opt_set_int(swrCtx, "out_sample_rate", pCodecAudioCtx->sample_rate, 0);
 	av_opt_set_sample_fmt(swrCtx, "in_sample_fmt", pCodecAudioCtx->sample_fmt, 0);
 	av_opt_set_sample_fmt(swrCtx, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
-	
+
 	int res = swr_init(swrCtx);
 
 	if(res != 0){
@@ -140,16 +140,16 @@ int Player::alocarMemoria(void) {
 	wantedSpec.samples = SDL_AUDIO_BUFFER_SIZE;
 	wantedSpec.userdata = pCodecAudioCtx;
 	wantedSpec.callback = audio_callback;
-	
+
 	if (SDL_OpenAudio(&wantedSpec, &audioSpec) < 0) {
 		cout<<"Error opening audio"<<endl;
 		exit(-1);
 	}
-	wanted_frame.format = AV_SAMPLE_FMT_S16;	
+	wanted_frame.format = AV_SAMPLE_FMT_S16;
 	wanted_frame.sample_rate = audioSpec.freq;
 	wanted_frame.channel_layout = av_get_default_channel_layout(audioSpec.channels);
 	wanted_frame.channels = audioSpec.channels;
-	
+
 	initAudioPacket(&audioq);
 	SDL_PauseAudio(0);
 
@@ -181,7 +181,7 @@ int Player::alocarMemoria(void) {
 	return 1;
 }
 
-void Player::initAudioPacket(AudioPacket *q) 
+void Player::initAudioPacket(AudioPacket *q)
 {
     q->last = NULL;
     q->first = NULL;
@@ -189,7 +189,7 @@ void Player::initAudioPacket(AudioPacket *q)
     q->cond = SDL_CreateCond();
 }
 
-int Player::putAudioPacket(AudioPacket *q, AVPacket *pkt) 
+int Player::putAudioPacket(AudioPacket *q, AVPacket *pkt)
 {
     AVPacketList *pktl;
     AVPacket *newPkt;
@@ -206,7 +206,7 @@ int Player::putAudioPacket(AudioPacket *q, AVPacket *pkt)
 
     SDL_LockMutex(q->mutex);
 
-    if (!q->last) 
+    if (!q->last)
         q->first = pktl;
     else
         q->last->next = pktl;
@@ -283,7 +283,7 @@ int audio_decode_frame(AVCodecContext* aCodecCtx, uint8_t* audio_buf, int buf_si
 
             avcodec_send_packet(aCodecCtx, &pkt);
             avcodec_receive_frame(aCodecCtx, &frame);
-            
+
 			len1 = frame.pkt_size;
             if (len1 < 0)
             {
@@ -353,7 +353,7 @@ int audio_decode_frame(AVCodecContext* aCodecCtx, uint8_t* audio_buf, int buf_si
 }
 
 void audio_callback(void* userdata, Uint8* stream, int len){
-	
+
 	AVCodecContext* aCodecCtx = (AVCodecContext*)userdata;
     int len1, audio_size;
 
@@ -432,12 +432,31 @@ int Player::lerFramesVideo(void) {
 				exibirErro(res);
 				continue;
 			}
-			SDL_UpdateYUVTexture(bmp, NULL, pFrame->data[0], pFrame->linesize[0],
-				pFrame->data[1], pFrame->linesize[1],
-				pFrame->data[2], pFrame->linesize[2]);
-			SDL_RenderCopy(renderer, bmp, NULL, NULL);
-			SDL_RenderPresent(renderer);
-			SDL_UpdateWindowSurface(screen);
+
+			SDL_LockYUVOverlay(bmp);
+
+			AVPicture pict;
+			pict.data[0] = bmp->pixels[0];
+		    pict.data[1] = bmp->pixels[2];
+		    pict.data[2] = bmp->pixels[1];
+
+		    pict.linesize[0] = bmp->pitches[0];
+		    pict.linesize[1] = bmp->pitches[2];
+		    pict.linesize[2] = bmp->pitches[1];
+
+			sws_scale(sws_ctx, (uint8_t const * const *)pFrame->data,
+					  pFrame->linesize, 0, pCodecCtx->height,
+					  pict.data, pict.linesize);
+
+			SDL_UnlockYUVOverlay(bmp);
+
+			SDL_Rect rect;
+			rect.x = 0;
+			rect.y = 0;
+			rect.w = pCodecCtx->width;
+			rect.h = pCodecCtx->height;
+			SDL_DisplayYUVOverlay(bmp, &rect);
+
 			SDL_Delay(1000/30);
 		}
 
@@ -451,20 +470,18 @@ int Player::lerFramesVideo(void) {
 
 int Player::criarDisplay(void) {
 
-	screen = SDL_CreateWindow("Video Player teste",
-		SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED,
+	screen = SDL_SetVideoMode(
 		pCodecCtx->width, pCodecCtx->height,
-		SDL_WINDOW_OPENGL);
+		0, 0
+	);
 
 	if (!screen) {
-		cout << "N�o foi possivel setar a screen com o v�deo desse tamannho" << endl;
+		cout << "Failed to create screen" << endl;
 		return -1;
 	}
 
-	renderer = SDL_CreateRenderer(screen, -1, 0);
-
-	bmp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STATIC, pCodecCtx->width, pCodecCtx->height);
+	bmp = SDL_CreateYUVOverlay(pCodecCtx->width, pCodecCtx->height,
+                           SDL_YV12_OVERLAY, screen);
 
 	return 1;
 }

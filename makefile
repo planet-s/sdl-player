@@ -3,11 +3,16 @@ CFLAGS = -g -Wall
 SRCS = Player.cpp main.cpp
 PROG = player
 
-FFMPEG_1 = `pkg-config --cflags libavformat libavcodec libswresample libswscale libavutil`
-SDL2 = `pkg-config --libs libavformat libavcodec libswresample libswscale libavutil sdl2`
+PKG_CONFIG ?= pkg-config
+
+FFMPEG_1 = `${PKG_CONFIG} --cflags libavformat libavcodec libswresample libswscale libavutil`
+SDL = `${PKG_CONFIG} --libs libavformat libavcodec libswresample libswscale libavutil sdl`
 
 LIBS := $(FFMPEG_1)
-LIBS := $(SDL2)
+LIBS := $(SDL)
 
-$(PROG):$(SRCS) 
+$(PROG):$(SRCS)
 	$(CC) $(CFLAGS) -o $(PROG) $(SRCS) $(LIBS)
+
+clean:
+	rm $(PROG)
