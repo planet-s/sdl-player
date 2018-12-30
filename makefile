@@ -1,4 +1,4 @@
-CFLAGS := -std=c++11 -g -Wall
+CPPFLAGS := -std=c++11 -g -Wall
 SRCS = Player.cpp main.cpp
 PROG = player
 
@@ -11,7 +11,7 @@ LIBS := $(FFMPEG_1)
 LIBS := $(SDL)
 
 $(PROG):$(SRCS)
-	$(CXX) $(CFLAGS) -o $(PROG) $(SRCS) $(LIBS)
+	$(CXX) $(CPPFLAGS) -o $(PROG) $(SRCS) $(LIBS)
 
 clean:
 	rm $(PROG)
